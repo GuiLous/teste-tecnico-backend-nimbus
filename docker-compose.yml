@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  db-postgres-alert:
+    image: postgres:alpine
+    ports:
+      - '5432:5432'
+    container_name: 'db-postgres-alert'
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123123
+
+volumes:
+  db-alert-api:
