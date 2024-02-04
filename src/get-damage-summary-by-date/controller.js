@@ -1,4 +1,3 @@
-/* eslint-disable no-param-reassign */
 const repository = require('./repository');
 
 function getDateFormatted(date) {
@@ -20,10 +19,16 @@ module.exports = {
       if (existingSummary) {
         existingSummary.damages.push(alert.damage);
         if (alert.damage > existingSummary.maxDamageEvent.damage) {
-          existingSummary.maxDamageEvent = alert;
+          existingSummary.maxDamageEvent = {
+            event: alert.event,
+            damage: alert.damage,
+          };
         }
         if (alert.damage < existingSummary.minDamageEvent.damage) {
-          existingSummary.minDamageEvent = alert;
+          existingSummary.minDamageEvent = {
+            event: alert.event,
+            damage: alert.damage,
+          };
         }
       } else {
         result.push({
