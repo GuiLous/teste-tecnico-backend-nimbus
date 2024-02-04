@@ -17,6 +17,7 @@
         "linebreak-style": "off",
         "no-useless-catch": "off",
         "no-param-reassign": "off",
-        "prefer-destructuring": "off"
+        "prefer-destructuring": "off",
+        "no-console": "off"
     }
 }
