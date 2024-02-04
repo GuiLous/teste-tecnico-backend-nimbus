@@ -1,50 +1,51 @@
+/* eslint-disable no-param-reassign */
 const repository = require('./repository');
 
+function getDateFormatted(date) {
+  const dateFormatted = new Date(date).toISOString().split('T')[0];
+  return dateFormatted;
+}
+
 module.exports = {
-    async execute(dateStart, dateEnd) {
-        const dbAlerts = await repository.execute(dateStart, dateEnd);
+  async execute(dateStart, dateEnd) {
+    const dbAlerts = await repository.execute(dateStart, dateEnd);
 
-        return dbAlerts
-            .reduce((result, alert) => {
-                const dateAlreadySummarized = result.find(({ date }) => date === alert.date);
-                const {
-                    damages: oldDamages,
-                    maxDamageEvent: oldMaxDamageEvent,
-                    minDamageEvent: oldMinDamageEvent,
-                } = { ...dateAlreadySummarized };
-                const date = alert.date;
-                const damages = (oldDamages || []).concat([alert.damage]);
-                let maxDamageEvent = alert;
-                if (oldMaxDamageEvent && oldMaxDamageEvent.damage > alert.damage) {
-                    maxDamageEvent = oldMaxDamageEvent;
-                }
-                let minDamageEvent;
-                if (oldMinDamageEvent && oldMinDamageEvent.damage < alert.damage) {
-                    minDamageEvent = oldMinDamageEvent;
-                }
-                minDamageEvent = alert;
+    const eventsResponse = dbAlerts.reduce((result, alert) => {
+      const { date } = alert;
 
-                if (dateAlreadySummarized) {
-                    dateAlreadySummarized.damages = damages;
-                    dateAlreadySummarized.maxDamageEvent = maxDamageEvent;
-                    dateAlreadySummarized.minDamageEvent = minDamageEvent;
-                }
-                else {
-                    result.push({
-                        date,
-                        damages,
-                        maxDamageEvent,
-                        minDamageEvent,
-                    });
-                }
+      const existingSummary = result.find(
+        summary => summary.date === getDateFormatted(date),
+      );
 
-                return result;
-            }, [])
-            .sort((a, b) => b.date.localeCompare(a.date))
-            .forEach(summary => {
-                summary.avgDamage = summary.damages.reduce((result, damage) => result+damage, 0);
-                delete summary.damages;
-                return summary;
-            });
-    },
+      if (existingSummary) {
+        existingSummary.damages.push(alert.damage);
+        if (alert.damage > existingSummary.maxDamageEvent.damage) {
+          existingSummary.maxDamageEvent = alert;
+        }
+        if (alert.damage < existingSummary.minDamageEvent.damage) {
+          existingSummary.minDamageEvent = alert;
+        }
+      } else {
+        result.push({
+          date: getDateFormatted(date),
+          damages: [alert.damage],
+          maxDamageEvent: { event: alert.event, damage: alert.damage },
+          minDamageEvent: { event: alert.event, damage: alert.damage },
+        });
+      }
+
+      return result;
+    }, []);
+
+    eventsResponse.forEach(summary => {
+      const totalDamage = summary.damages.reduce(
+        (total, damage) => total + damage,
+        0,
+      );
+      summary.avgDamage = Math.round(totalDamage / summary.damages.length);
+      delete summary.damages;
+    });
+
+    return eventsResponse.sort((a, b) => b.date.localeCompare(a.date));
+  },
 };
